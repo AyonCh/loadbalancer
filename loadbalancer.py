@@ -1,5 +1,6 @@
 from flask import (
     Flask,
+    json,
     jsonify,
     request,
     request_finished,
@@ -13,12 +14,11 @@ import requests
 PORT = int(argv[1])
 HOST = "127.0.0.1"
 config = {
-    "maxLoad": 2,
+    "maxLoad": 10,
     "maxBuckets": 10,
     "startupCommand": [
-        "python3",
-        "sampleServer.py",
-        "{host}",
+        "node",
+        "server/index.js",
         "{port}",
     ],
 }
@@ -37,12 +37,8 @@ def createServer(host, port):
         .split(" ")
     )
 
-    processes[port] = subprocess.Popen(
-        command,
-        stdin=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        shell=True,
-    )
+    processes[port] = subprocess.Popen(command)
+    sleep(1)
     print("Creating server on port", port)
 
 
@@ -74,11 +70,8 @@ def proxy(path):
     url = f"""http://{HOST}:{buckets[0]["port"]}/"""
     buckets[0]["count"] += 1
 
-    print(url)
     res = requests.get(url)
-    print(res)
 
-    print(buckets)
     buckets[0]["count"] -= 1
 
     # if count = 0 close server
@@ -92,7 +85,7 @@ def proxy(path):
     else:
         index = 1
 
-    return jsonify({"path": path, "string": url})
+    return jsonify({"res": res.content.decode()})
 
 
 app.run("127.0.0.1", PORT, debug=True)
