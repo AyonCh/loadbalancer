@@ -53,26 +53,6 @@ def killServer(port):
     print("Deleting server on port", port)
 
 
-def log_response(sender, response, **extra):
-    global index
-    # find the smallest bucket
-    buckets[0]["count"] -= 1
-
-    # if count = 0 close server
-    if buckets[0]["count"] <= 0:
-        killServer(str(buckets[0]["port"]))
-        buckets.pop(0)
-
-    if len(buckets) > 0:
-        buckets.sort(key=lambda x: x["port"], reverse=True)
-        index = buckets[0]["port"] - PORT + 1
-    else:
-        index = 1
-
-
-request_finished.connect(log_response, app)
-
-
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def proxy(path):
@@ -80,13 +60,13 @@ def proxy(path):
     buckets.sort(key=lambda x: x["count"])
 
     if len(buckets) < 1:
-        createServer(HOST, str(PORT + index))
+        # createServer(HOST, str(PORT + index))
         buckets.append({"count": 0, "port": PORT + index})
 
         index += 1
 
     if len(buckets) < config["maxBuckets"] and buckets[0]["count"] == config["maxLoad"]:
-        createServer(HOST, str(PORT + index))
+        # createServer(HOST, str(PORT + index))
         buckets.insert(0, {"count": 0, "port": PORT + index})
 
         index += 1
@@ -95,9 +75,23 @@ def proxy(path):
     buckets[0]["count"] += 1
 
     print(url)
-    res = requests.get(url)
+    # res = requests.get(url)
+    sleep(1)
 
-    print(res)
+    print(buckets)
+    buckets[0]["count"] -= 1
+
+    # if count = 0 close server
+    if buckets[0]["count"] <= 0:
+        # killServer(str(buckets[0]["port"]))
+        buckets.pop(0)
+
+    if len(buckets) > 0:
+        buckets.sort(key=lambda x: x["port"], reverse=True)
+        index = buckets[0]["port"] - PORT + 1
+    else:
+        index = 1
+
     return jsonify({"path": path, "string": url})
 
 
