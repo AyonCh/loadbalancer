@@ -12,7 +12,11 @@ import requests
 
 PORT = int(argv[1])
 HOST = "127.0.0.1"
-config = {"maxLoad": 2, "maxBuckets": 10}
+config = {
+    "maxLoad": 2,
+    "maxBuckets": 10,
+    "startupCommand": ["python3", "sampleServer.py", "{host}", "{port}"],
+}
 buckets = []
 processes = {}
 index = 1
@@ -21,8 +25,15 @@ app = Flask(__name__)
 
 
 def createServer(host, port):
+    command = (
+        " ".join(config["startupCommand"])
+        .replace("{host}", host)
+        .replace("{port}", port)
+        .split(" ")
+    )
+
     processes[port] = subprocess.Popen(
-        ["python3", "sampleServer.py", host, port],
+        command,
         stdin=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         shell=True,
