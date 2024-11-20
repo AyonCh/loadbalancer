@@ -60,13 +60,13 @@ def proxy(path):
     buckets.sort(key=lambda x: x["count"])
 
     if len(buckets) < 1:
-        # createServer(HOST, str(PORT + index))
+        createServer(HOST, str(PORT + index))
         buckets.append({"count": 0, "port": PORT + index})
 
         index += 1
 
     if len(buckets) < config["maxBuckets"] and buckets[0]["count"] == config["maxLoad"]:
-        # createServer(HOST, str(PORT + index))
+        createServer(HOST, str(PORT + index))
         buckets.insert(0, {"count": 0, "port": PORT + index})
 
         index += 1
@@ -75,15 +75,15 @@ def proxy(path):
     buckets[0]["count"] += 1
 
     print(url)
-    # res = requests.get(url)
-    sleep(1)
+    res = requests.get(url)
+    print(res)
 
     print(buckets)
     buckets[0]["count"] -= 1
 
     # if count = 0 close server
     if buckets[0]["count"] <= 0:
-        # killServer(str(buckets[0]["port"]))
+        killServer(str(buckets[0]["port"]))
         buckets.pop(0)
 
     if len(buckets) > 0:
