@@ -17,10 +17,9 @@ config = {
     "maxBuckets": 10,
     "startupCommand": [
         "python3",
-        "-m",
-        "waitress",
-        "--port={port}",
-        "sampleServer:app",
+        "sampleServer.py",
+        "{host}",
+        "{port}",
     ],
 }
 buckets = []
@@ -30,8 +29,13 @@ index = 1
 app = Flask(__name__)
 
 
-def createServer(port):
-    command = " ".join(config["startupCommand"]).replace("{port}", port).split(" ")
+def createServer(host, port):
+    command = (
+        " ".join(config["startupCommand"])
+        .replace("{host}", host)
+        .replace("{port}", port)
+        .split(" ")
+    )
 
     processes[port] = subprocess.Popen(
         command,
@@ -76,13 +80,13 @@ def proxy(path):
     buckets.sort(key=lambda x: x["count"])
 
     if len(buckets) < 1:
-        createServer(str(PORT + index))
+        createServer(HOST, str(PORT + index))
         buckets.append({"count": 0, "port": PORT + index})
 
         index += 1
 
     if len(buckets) < config["maxBuckets"] and buckets[0]["count"] == config["maxLoad"]:
-        createServer(str(PORT + index))
+        createServer(HOST, str(PORT + index))
         buckets.insert(0, {"count": 0, "port": PORT + index})
 
         index += 1
