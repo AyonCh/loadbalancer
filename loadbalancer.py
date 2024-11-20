@@ -22,7 +22,7 @@ app = Flask(__name__)
 
 def createServer(host, port):
     processes[port] = subprocess.Popen(
-        ["python3", "sampleServer.py", host, port],
+        ["python", "-m", "waitress", f'--port={port}', "sampleServer:app"],
         stdin=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         shell=True,
@@ -78,7 +78,6 @@ def proxy(path):
     url = f"""http://{HOST}:{buckets[0]["port"]}/"""
     buckets[0]["count"] += 1
 
-    sleep(100)
     print(url)
     res = requests.get(url)
 
