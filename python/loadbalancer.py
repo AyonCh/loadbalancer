@@ -16,7 +16,7 @@ config = {
     "totalServers": 10,
     "startupCommand": [
         "node",
-        "../server/index.js",
+        "server/index.js",
         "{port}",
     ],
 }
