@@ -14,7 +14,7 @@ import requests
 PORT = int(argv[1])
 HOST = "127.0.0.1"
 config = {
-    "maxLoad": 10,
+    "maxLoad": 2,
     "maxBuckets": 10,
     "startupCommand": [
         "node",
@@ -38,7 +38,6 @@ def createServer(host, port):
     )
 
     processes[port] = subprocess.Popen(command)
-    sleep(1)
     print("Creating server on port", port)
 
 
@@ -47,6 +46,25 @@ def killServer(port):
     del processes[port]
 
     print("Deleting server on port", port)
+
+
+def log_response(sender, response, **extra):
+    global index
+    buckets[0]["count"] -= 1
+
+    print(buckets)
+    if buckets[0]["count"] <= 0:
+        killServer(str(buckets[0]["port"]))
+        buckets.pop(0)
+
+    if len(buckets) > 0:
+        buckets.sort(key=lambda x: x["port"], reverse=True)
+        index = buckets[0]["port"] - PORT + 1
+    else:
+        index = 1
+
+
+request_finished.connect(log_response, app)
 
 
 @app.route("/", defaults={"path": ""})
@@ -71,19 +89,7 @@ def proxy(path):
     buckets[0]["count"] += 1
 
     res = requests.get(url)
-
-    buckets[0]["count"] -= 1
-
-    # if count = 0 close server
-    if buckets[0]["count"] <= 0:
-        killServer(str(buckets[0]["port"]))
-        buckets.pop(0)
-
-    if len(buckets) > 0:
-        buckets.sort(key=lambda x: x["port"], reverse=True)
-        index = buckets[0]["port"] - PORT + 1
-    else:
-        index = 1
+    sleep(1)
 
     return jsonify({"res": res.content.decode()})
 

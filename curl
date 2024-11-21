@@ -6,4 +6,6 @@ for ((i=1; i<=N; i++)) do
   curl $1 &
 done
 
+wait
+
 echo "done."
