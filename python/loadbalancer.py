@@ -6,7 +6,6 @@ from flask import (
     request_finished,
 )
 from sys import argv
-from time import sleep
 import subprocess
 import requests
 
@@ -14,11 +13,10 @@ import requests
 PORT = int(argv[1])
 HOST = "127.0.0.1"
 config = {
-    "maxLoad": 2,
-    "maxBuckets": 10,
+    "totalServers": 10,
     "startupCommand": [
         "node",
-        "server/index.js",
+        "../server/index.js",
         "{port}",
     ],
 }
@@ -49,19 +47,10 @@ def killServer(port):
 
 
 def log_response(sender, response, **extra):
-    global index
-    buckets[0]["count"] -= 1
-
-    print(buckets)
-    if buckets[0]["count"] <= 0:
-        killServer(str(buckets[0]["port"]))
-        buckets.pop(0)
-
-    if len(buckets) > 0:
-        buckets.sort(key=lambda x: x["port"], reverse=True)
-        index = buckets[0]["port"] - PORT + 1
-    else:
-        index = 1
+    if "port" in extra:
+        index = extra["port"] - PORT - 1
+        buckets.sort(key=lambda x: x["port"])
+        buckets[index]["count"] -= 1
 
 
 request_finished.connect(log_response, app)
@@ -70,28 +59,20 @@ request_finished.connect(log_response, app)
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def proxy(path):
-    global index
     buckets.sort(key=lambda x: x["count"])
 
-    if len(buckets) < 1:
-        createServer(HOST, str(PORT + index))
-        buckets.append({"count": 0, "port": PORT + index})
-
-        index += 1
-
-    if len(buckets) < config["maxBuckets"] and buckets[0]["count"] == config["maxLoad"]:
-        createServer(HOST, str(PORT + index))
-        buckets.insert(0, {"count": 0, "port": PORT + index})
-
-        index += 1
-
-    url = f"""http://{HOST}:{buckets[0]["port"]}/"""
+    url = f"""http://{HOST}:{buckets[0]["port"]}/{path}"""
     buckets[0]["count"] += 1
 
-    res = requests.get(url)
-    sleep(1)
+    res = requests.get(url).json()
 
-    return jsonify({"res": res.content.decode()})
+    request_finished.send(app, response=res, port=res["port"])
+
+    return jsonify({"res": res})
 
 
-app.run("127.0.0.1", PORT, debug=True)
+for i in range(config["totalServers"]):
+    buckets.append({"port": PORT + i + 1, "count": 0})
+    createServer(HOST, str(PORT + i + 1))
+
+app.run("127.0.0.1", PORT)
