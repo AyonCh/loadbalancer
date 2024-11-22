@@ -5,10 +5,7 @@ const app = express();
 const port = process.argv[2];
 
 app.get("/", (req, res) => {
-  res.send({
-    content: "Hello World",
-    port: Number(port),
-  });
+  res.send({ content: `Hello from port: ${port}` });
 });
 
 app.get("*", (req, res) => {

@@ -1,4 +1,3 @@
-from time import sleep
 from flask import Flask
 from sys import argv
 
@@ -9,7 +8,6 @@ port = int(argv[1])
 
 @app.route("/")
 def home():
-    sleep(2)
     return str(port)
 
 

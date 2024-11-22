@@ -1,8 +1,6 @@
 from flask import (
     Flask,
     json,
-    jsonify,
-    request,
     request_finished,
 )
 from sys import argv
@@ -15,8 +13,8 @@ HOST = "127.0.0.1"
 config = {
     "totalServers": 10,
     "startupCommand": [
-        "node",
-        "server/index.js",
+        "python3",
+        "sampleServer.py",
         "{port}",
     ],
 }
@@ -61,14 +59,15 @@ request_finished.connect(log_response, app)
 def proxy(path):
     buckets.sort(key=lambda x: x["count"])
 
-    url = f"""http://{HOST}:{buckets[0]["port"]}/{path}"""
+    port = buckets[0]["port"]
+    url = f"""http://{HOST}:{port}/{path}"""
     buckets[0]["count"] += 1
 
-    res = requests.get(url).json()
+    res = requests.get(url).text
 
-    request_finished.send(app, response=res, port=res["port"])
+    request_finished.send(app, response=res, port=port)
 
-    return jsonify({"res": res})
+    return json.dumps(res)
 
 
 for i in range(config["totalServers"]):
