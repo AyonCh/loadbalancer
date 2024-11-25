@@ -1,0 +1,5 @@
+{
+  "maxLoad": 2,
+  "availablePorts": [5001, 5002, 5003, 5004, 5005],
+  "startupCommand": ["node", "server/index.js", "{port}"]
+}
