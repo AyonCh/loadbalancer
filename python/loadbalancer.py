@@ -11,7 +11,8 @@ import requests
 PORT = int(argv[1])
 HOST = "127.0.0.1"
 config = {
-    "totalServers": 10,
+    "maxLoad": 10,
+    "availablePorts": [PORT + i for i in range(1,11)],
     "startupCommand": [
         "python3",
         "sampleServer.py",
@@ -20,12 +21,17 @@ config = {
 }
 buckets = []
 processes = {}
-index = 1
+ports = config["availablePorts"]
 
 app = Flask(__name__)
 
 
-def createServer(host, port):
+def createServer(host):
+    global buckets
+
+    ports.sort()
+    port = ports.pop(0)
+
     command = (
         " ".join(config["startupCommand"])
         .replace("{host}", host)
@@ -34,13 +40,14 @@ def createServer(host, port):
     )
 
     processes[port] = subprocess.Popen(command)
+    buckets.append({"port": port, "count": 0})
     print("Creating server on port", port)
 
 
 def killServer(port):
     processes[port].terminate()
     del processes[port]
-
+    ports.append(port)
     print("Deleting server on port", port)
 
 
@@ -50,6 +57,9 @@ def log_response(sender, response, **extra):
         buckets.sort(key=lambda x: x["port"])
         buckets[index]["count"] -= 1
 
+        if len(buckets) > 1 and buckets[index]["count"] == 0:
+            killServer(extra["port"])
+
 
 request_finished.connect(log_response, app)
 
@@ -58,6 +68,9 @@ request_finished.connect(log_response, app)
 @app.route("/<path:path>")
 def proxy(path):
     buckets.sort(key=lambda x: x["count"])
+
+    if len(ports) > 0 and buckets[0]["count"] >= config["maxLoad"] -1:
+        createServer(HOST)
 
     port = buckets[0]["port"]
     url = f"""http://{HOST}:{port}/{path}"""
@@ -70,8 +83,6 @@ def proxy(path):
     return json.dumps(res)
 
 
-for i in range(config["totalServers"]):
-    buckets.append({"port": PORT + i + 1, "count": 0})
-    createServer(HOST, str(PORT + i + 1))
+createServer(HOST)
 
 app.run("127.0.0.1", PORT)
