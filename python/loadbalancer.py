@@ -11,8 +11,8 @@ import requests
 PORT = int(argv[1])
 HOST = "127.0.0.1"
 config = {
-    "maxLoad": 10,
-    "availablePorts": [PORT + i for i in range(1,11)],
+    "maxLoad": 2,
+    "availablePorts": [PORT + i for i in range(1, 11)],
     "startupCommand": [
         "python3",
         "sampleServer.py",
@@ -35,7 +35,7 @@ def createServer(host):
     command = (
         " ".join(config["startupCommand"])
         .replace("{host}", host)
-        .replace("{port}", port)
+        .replace("{port}", str(port))
         .split(" ")
     )
 
@@ -45,20 +45,23 @@ def createServer(host):
 
 
 def killServer(port):
-    processes[port].terminate()
+    processes[port].kill()
     del processes[port]
     ports.append(port)
+
     print("Deleting server on port", port)
 
 
 def log_response(sender, response, **extra):
     if "port" in extra:
-        index = extra["port"] - PORT - 1
+        port = extra["port"]
+        index = port - PORT - 1
         buckets.sort(key=lambda x: x["port"])
         buckets[index]["count"] -= 1
 
         if len(buckets) > 1 and buckets[index]["count"] == 0:
-            killServer(extra["port"])
+            killServer(port)
+            buckets.pop(index)
 
 
 request_finished.connect(log_response, app)
@@ -69,7 +72,7 @@ request_finished.connect(log_response, app)
 def proxy(path):
     buckets.sort(key=lambda x: x["count"])
 
-    if len(ports) > 0 and buckets[0]["count"] >= config["maxLoad"] -1:
+    if len(ports) > 0 and buckets[0]["count"] >= config["maxLoad"]:
         createServer(HOST)
 
     port = buckets[0]["port"]
