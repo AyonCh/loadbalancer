@@ -13,12 +13,9 @@ HOST = "127.0.0.1"
 config = {
     "maxLoad": 2,
     "availablePorts": [PORT + i for i in range(1, 11)],
-    "startupCommand": [
-        "python3",
-        "sampleServer.py",
-        "{port}",
-    ],
+    "startupCommand": ["python3", "sampleServer.py", "{port}"],
 }
+
 buckets = []
 processes = {}
 ports = config["availablePorts"]
